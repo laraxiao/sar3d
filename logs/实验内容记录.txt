@@ -1,0 +1,23 @@
+EP1 模型 球 仿真图像 SLICYSIM\CSV
+EP2 颜色 球 仿真图像 SLICYSIM\CSV
+EP3 模型 SLICY 冲击响应 仿真图像 SLICYSIM\CSV
+EP4 颜色 SLICY 冲击响应 仿真图像 SLICYSIM\CSV
+EP5 模型 SLICY 冲击响应 真实图像 SLICYCSV
+EP6 颜色 SLICY 冲击响应 真实图像 SLICYCSV
+以上保存图片均为冲击响应之前的，之后修改
+EP7 模型 SLICY 冲击响应 真实图像 SLICYCSV net（冲击响应） 调整 加入能量归一化
+EP8 颜色 SLICY 冲击响应 真实图像 SLICYCSV net（冲击响应） 调整 加入能量归一化
+EP9   模型 SLICY 冲击响应 真实图像 SLICYCSV 加入能量归一化 去除几何loss 模型缩放1.5→1 50前不进行配准
+EP10 颜色 SLICY 冲击响应 真实图像 SLICYCSV 加入能量归一化 去除几何loss 模型缩放1.5→1 50前不进行配准
+EP11 模型 SLICY 冲击响应 仿真图像 SLICYSIM\CSV 去除几何loss 模型缩放1 不进行配准
+EP12 颜色 SLICY 冲击响应 仿真图像 SLICYSIM\CSV 去除几何loss 模型缩放1 不进行配准
+EP13 模型 T72 仿真图像 T72WSim/CSV ico_sphereP.obj 去除几何loss 模型缩放4 不进行配准
+EP14 颜色 T72 仿真图像 T72WSim/CSV ico_sphereP.obj 去除几何loss 模型缩放4 不进行配准
+EP15 模型 T72 仿真图像 T72WSim/CSV ico_sphereP.obj 几何loss 模型缩放4 不进行配准
+EP16 模型 T72 仿真图像减少至36 T72WSim/CSV30/all ico_sphereP.obj 模型缩放4 不进行配准 阴影轮廓
+
+EP28 模型 球 仿真图像减少至32 T72WSim/CSV32 模型缩放4 不进行配准 阴影轮廓 loss L2
+EP29 模型 球 仿真图像减少至32 T72WSim/CSV32 模型缩放4 不进行配准 阴影轮廓 loss IoU
+EP30 模型 球 仿真图像减少至32 T72WSim/CSV32 模型缩放4 不进行配准 阴影轮廓 loss L2+IoU 
+
+EP31 调整 gamma 很有用 影响顶盖的形状修正
