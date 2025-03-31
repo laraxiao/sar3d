@@ -21,7 +21,7 @@ from pytorch3d.renderer import (
 import torchvision.utils as vutils
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
+# try github
 class SARBestAngleFinder:
     def __init__(self, obj_path, output_dir="./sar_best_view", device="cuda"):
         """
