@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 import argparse
 from pytorch3d.io import load_obj
+from pytorch3d.renderer.blending import BlendParams
 from pytorch3d.structures import Meshes
 from pytorch3d.renderer import (
     look_at_view_transform,
@@ -14,7 +15,7 @@ from pytorch3d.renderer import (
     RasterizationSettings,
     MeshRenderer,
     MeshRasterizer,
-    SoftPhongShader,
+    SARSoftPhongShader,
     HardFlatShader,
     TexturesVertex
 )
@@ -72,54 +73,62 @@ class SARBestAngleFinder:
         self.faces = faces
     
     def get_differentiable_renderer(self, image_size=None):
-        """Create a differentiable renderer for angle optimization."""
         if image_size is None:
-            image_size = self.image_size
-            
+           image_size = self.image_size
+        
         device = self.device
-        
-        # Rasterization settings for differentiable rendering
+    
+    # Better rasterization settings for SAR simulation
         raster_settings = RasterizationSettings(
-            image_size=image_size,
-            blur_radius=0.0, 
-            faces_per_pixel=1,
+        image_size=image_size,
+        blur_radius=0.0001,  # Small non-zero value for better gradients
+        faces_per_pixel=20,  # Increased to handle overlapping geometry
         )
-        
-        # Create a differentiable renderer
+    
+    # Use the specialized SAR renderer already in your codebase
         renderer = MeshRenderer(
-            rasterizer=MeshRasterizer(raster_settings=raster_settings),
-            shader=SoftPhongShader(
-                device=device,
-                cameras=None,
-                lights=PointLights(device=device, location=[[0.0, 0.0, -3.0]])
-            )
+          rasterizer=MeshRasterizer(raster_settings=raster_settings),
+          shader=SARSoftPhongShader(  # Use your specialized SAR shader
+            device=device,
+            cameras=None,
+            blend_params=BlendParams(gamma=1e-2, background_color=(0.0, 0.0, 0.0))
+          )
         )
-        
+    
         return renderer
     
     def simulate_sar(self, rendered_image):
-        """
-        Simulate SAR characteristics from a standard rendered image.
-        
-        In a full implementation, this would use your SimPix network.
-        Here we use a simplified approach for demonstration.
-        """
-        # Extract RGB channels (first 3 channels)
-        if rendered_image.shape[-1] > 3:
-            rgb_image = rendered_image[..., :3]
-        else:
-            rgb_image = rendered_image
-        
-        # Convert to grayscale (simplified SAR simulation)
-        # In your actual code, replace this with your SimPix network
-        gray_image = 0.299 * rgb_image[..., 0] + 0.587 * rgb_image[..., 1] + 0.114 * rgb_image[..., 2]
-        
-        # Add some noise and contrast to simulate SAR characteristics
-        noise = torch.randn_like(gray_image) * 0.05
-        sar_image = torch.clamp(gray_image * 1.2 + noise, 0, 1)
-        
-        # Return as [B, 1, H, W] format for further processing
-        return sar_image.unsqueeze(1)
+  
+      if rendered_image.shape[-1] > 3:
+        rgb_image = rendered_image[..., :3]
+      else:
+        rgb_image = rendered_image
+    
+    # 1. Use radar-appropriate reflectivity conversion
+    # Different materials reflect radar differently than visible light
+    # These weights should ideally be calibrated to match your domain
+      radar_reflectivity = 0.4 * rgb_image[..., 0] + 0.4 * rgb_image[..., 1] + 0.2 * rgb_image[..., 2]
+    
+    # 2. Apply incidence angle effects (simplified)
+    # In real SAR, reflectivity depends on incidence angle
+    # This simulates stronger returns from surfaces facing the radar
+      z_normals = rendered_image[..., 3] if rendered_image.shape[-1] > 3 else torch.ones_like(radar_reflectivity)
+      radar_reflectivity = radar_reflectivity * (0.7 + 0.3 * z_normals)
+    
+    # 3. Apply multiplicative speckle noise (characteristic of SAR)
+    # SAR speckle follows gamma or Rayleigh distribution, not Gaussian
+      speckle = torch.rand_like(radar_reflectivity) * 0.7 + 0.5  # Simplified speckle approximation
+      sar_image = radar_reflectivity * speckle
+    
+    # 4. Apply dynamic range compression (common in SAR processing)
+    # SAR often has very high dynamic range
+      sar_image = torch.log(torch.clamp(sar_image * 2.0, min=0.01) + 1.0) / 1.1
+    
+    # 5. Normalize to [0, 1] range
+      sar_image = torch.clamp(sar_image, 0, 1)
+    
+    # Return as [B, 1, H, W] format for CNN processing
+      return sar_image.unsqueeze(1)
     
     def compute_sar_visibility_score(self, sar_image):
         """
